@@ -4,19 +4,20 @@ function row(...vals) {
   return Object.fromEntries(vals.map((v, i) => [i, v === null ? { v: '' } : { v }]))
 }
 
-// Employees sheet: A=EmpID B=RawName C=DeptCode D=StartDate E=AnnualSalary
-//                  F=RatingPct G=Department(blank,T1) H=CleanName(blank,T3)
-//                  I=SafeEmail(blank,T3) J=Email(original)
+// Employees sheet columns:
+//  A0 EmpID  B1 RawName  C2 DeptCode  D3 StartDate  E4 AnnualSalary  F5 RatingPct
+//  G6 Department(T1)  H7 CleanName(T3)  I8 SafeEmail(T3)  J9 Email(src)
+//  K10 CityState(src)  L11 City(T4)  M12 State(T4)  N13 AccountKey(T5)  O14 MigrationStatus(T6)
 const employeeRows = {
-  0: row('EmpID','RawName','DeptCode','StartDate','AnnualSalary','RatingPct','Department','CleanName','SafeEmail','Email'),
-  1: row(1001,'  john smith  ','HR',43845,58000,0.87,'','','','jsmith@meridian.com'),
-  2: row(1002,'JANE DOE','FIN',44277,72000,0.92,'','','',''),
-  3: row(1003,'  bob johnson','MKT',43654,61000,0.78,'','','','bjohnson@meridian.com'),
-  4: row(1004,'sarah WILLIAMS  ','HR',44866,55000,0.95,'','','',''),
-  5: row(1005,'MIKE Chen','IT',45031,85000,0.83,'','','','mchen@meridian.com'),
-  6: row(1006,'  lisa PARK  ','OPS',44075,67000,0.74,'','','','lpark@meridian.com'),
-  7: row(1007,'JAMES WILSON','FIN',44361,79000,0.89,'','','',''),
-  8: row(1008,'  amy RODRIGUEZ','MKT',45350,63000,0.91,'','','','arodriguez@meridian.com'),
+  0: row('EmpID','RawName','DeptCode','StartDate','AnnualSalary','RatingPct','Department','CleanName','SafeEmail','Email','CityState','City','State','AccountKey','MigrationStatus'),
+  1: row(1001,'  john smith  ','HR',43845,58000,0.87,'','','','jsmith@meridian.com','Boston, MA','','','',''),
+  2: row(1002,'JANE DOE','FIN',44277,72000,0.92,'','','','','Denver, CO','','','',''),
+  3: row(1003,'  bob johnson','MKT',43654,61000,0.78,'','','','bjohnson@meridian.com','Austin, TX','','','',''),
+  4: row(1004,'sarah WILLIAMS  ','HR',44866,55000,0.95,'','','','','Seattle, WA','','','',''),
+  5: row(1005,'MIKE Chen','IT',45031,85000,0.83,'','','','mchen@meridian.com','Chicago, IL','','','',''),
+  6: row(1006,'  lisa PARK  ','OPS',44075,67000,0.74,'','','','lpark@meridian.com','Miami, FL','','','',''),
+  7: row(1007,'JAMES WILSON','FIN',44361,79000,0.89,'','','','','Portland, OR','','','',''),
+  8: row(1008,'  amy RODRIGUEZ','MKT',45350,63000,0.91,'','','','arodriguez@meridian.com','Phoenix, AZ','','','',''),
 }
 
 const deptRefRows = {
@@ -41,7 +42,7 @@ export const ENTRY_TRACK = {
         id: 'employees',
         name: 'Employees',
         rowCount: 20,
-        columnCount: 12,
+        columnCount: 16,
         cellData: employeeRows,
       },
       deptref: {
@@ -95,6 +96,44 @@ export const ENTRY_TRACK = {
       ],
       timeLabel: '8 minutes',
     },
+    {
+      id: 't4',
+      label: 'Task 4 — Split',
+      minutes: 8,
+      targetSheet: 'Employees',
+      instructions: [
+        'The legacy system stored location as a single "City, State" field in column K. The new system needs them separated.',
+        '• In column L (City): pull out just the city name — e.g. "Boston".',
+        '• In column M (State): pull out just the 2-letter state code — e.g. "MA".',
+        'You can use Text to Columns or a formula — both are fine.',
+        'Fill L2:M9.',
+      ],
+      timeLabel: '8 minutes',
+    },
+    {
+      id: 't5',
+      label: 'Task 5 — Combine',
+      minutes: 6,
+      targetSheet: 'Employees',
+      instructions: [
+        'The new system needs a single Account Key for each record, formatted as DEPTCODE-EMPID (e.g. HR-1001).',
+        '• In column N (AccountKey): write a formula that joins the DeptCode (column C) and EmpID (column A) with a dash between them.',
+        'Fill N2:N9.',
+      ],
+      timeLabel: '6 minutes',
+    },
+    {
+      id: 't6',
+      label: 'Task 6 — Flag',
+      minutes: 8,
+      targetSheet: 'Employees',
+      instructions: [
+        'Records missing an email address can\'t be migrated yet — they must be held for review.',
+        '• In column O (MigrationStatus): write a formula that shows "HOLD" when the Email (column J) is blank, and "READY" when it has an email.',
+        'Fill O2:O9.',
+      ],
+      timeLabel: '8 minutes',
+    },
   ],
 
   answerKey: {
@@ -133,6 +172,39 @@ export const ENTRY_TRACK = {
       { row: 6, col: 8, expected: 'lpark@meridian.com',      requireFormula: ['IF'] },
       { row: 7, col: 8, expected: 'N/A',                     requireFormula: ['IF'] },
       { row: 8, col: 8, expected: 'arodriguez@meridian.com', requireFormula: ['IF'] },
+    ],
+    // Split — value only (Text-to-Columns or formula both valid; Carl eyeballs method)
+    t4: [
+      { row: 1, col: 11, expected: 'Boston' },   { row: 1, col: 12, expected: 'MA' },
+      { row: 2, col: 11, expected: 'Denver' },   { row: 2, col: 12, expected: 'CO' },
+      { row: 3, col: 11, expected: 'Austin' },   { row: 3, col: 12, expected: 'TX' },
+      { row: 4, col: 11, expected: 'Seattle' },  { row: 4, col: 12, expected: 'WA' },
+      { row: 5, col: 11, expected: 'Chicago' },  { row: 5, col: 12, expected: 'IL' },
+      { row: 6, col: 11, expected: 'Miami' },    { row: 6, col: 12, expected: 'FL' },
+      { row: 7, col: 11, expected: 'Portland' }, { row: 7, col: 12, expected: 'OR' },
+      { row: 8, col: 11, expected: 'Phoenix' },  { row: 8, col: 12, expected: 'AZ' },
+    ],
+    // Combine — must be a formula (hand-typing the key isn't the skill)
+    t5: [
+      { row: 1, col: 13, expected: 'HR-1001',  requireFormula: true },
+      { row: 2, col: 13, expected: 'FIN-1002', requireFormula: true },
+      { row: 3, col: 13, expected: 'MKT-1003', requireFormula: true },
+      { row: 4, col: 13, expected: 'HR-1004',  requireFormula: true },
+      { row: 5, col: 13, expected: 'IT-1005',  requireFormula: true },
+      { row: 6, col: 13, expected: 'OPS-1006', requireFormula: true },
+      { row: 7, col: 13, expected: 'FIN-1007', requireFormula: true },
+      { row: 8, col: 13, expected: 'MKT-1008', requireFormula: true },
+    ],
+    // Flag — must use IF logic
+    t6: [
+      { row: 1, col: 14, expected: 'READY', requireFormula: ['IF'] },
+      { row: 2, col: 14, expected: 'HOLD',  requireFormula: ['IF'] },
+      { row: 3, col: 14, expected: 'READY', requireFormula: ['IF'] },
+      { row: 4, col: 14, expected: 'HOLD',  requireFormula: ['IF'] },
+      { row: 5, col: 14, expected: 'READY', requireFormula: ['IF'] },
+      { row: 6, col: 14, expected: 'READY', requireFormula: ['IF'] },
+      { row: 7, col: 14, expected: 'HOLD',  requireFormula: ['IF'] },
+      { row: 8, col: 14, expected: 'READY', requireFormula: ['IF'] },
     ],
   },
 }

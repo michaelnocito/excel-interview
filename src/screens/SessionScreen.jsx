@@ -125,6 +125,8 @@ export default function SessionScreen({ config, track, onComplete }) {
       exportedAt: new Date().toISOString(),
     }
 
+    if (import.meta.env.DEV) window.__lastPayload = payload // dev-only: inspect grading
+
     let sealed = null
     try {
       sealed = await sealPayload(payload)

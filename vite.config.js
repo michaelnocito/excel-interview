@@ -20,6 +20,8 @@ export default defineConfig({
       '@univerjs/design',
       '@univerjs/engine-render',
       '@univerjs/engine-formula',
+      '@univerjs/sheets-numfmt',
+      '@univerjs/sheets-numfmt-ui',
     ],
   },
 })

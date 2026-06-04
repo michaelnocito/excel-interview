@@ -22,8 +22,9 @@ function getCell(univerAPI, sheetName, row, col) {
 }
 
 function checkFormula(formula, required) {
-  if (!required) return true
+  if (!required) return true                          // no requirement → value-only (e.g. Split: Text-to-Columns ok)
   const f = formula.toUpperCase()
+  if (required === true) return f.startsWith('=')     // any formula at all (e.g. Combine: must not be hand-typed)
   if (Array.isArray(required)) return required.every(r => f.includes(r.toUpperCase()))
   return f.includes(required.toUpperCase())
 }
