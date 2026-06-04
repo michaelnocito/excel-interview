@@ -23,24 +23,29 @@ import UIEnUS from '@univerjs/ui/lib/locale/en-US'
 import DocsUIEnUS from '@univerjs/docs-ui/lib/locale/en-US'
 import SheetsFormulaUIEnUS from '@univerjs/sheets-formula-ui/lib/locale/en-US'
 
-export function createUniverInstance(container, workbookData) {
+// Locale files may be CJS default-wrapped — unwrap if needed
+function unwrap(m) { return m?.default ?? m }
+
+// containerId must be a string (DOM element ID), e.g. 'univer-container'
+export function createUniverInstance(containerId, workbookData) {
   const univer = new Univer({
     theme: defaultTheme,
     locale: LocaleType.EN_US,
     locales: {
       [LocaleType.EN_US]: mergeLocales(
-        SheetsEnUS,
-        SheetsUIEnUS,
-        UIEnUS,
-        DocsUIEnUS,
-        SheetsFormulaUIEnUS,
+        unwrap(SheetsEnUS),
+        unwrap(SheetsUIEnUS),
+        unwrap(UIEnUS),
+        unwrap(DocsUIEnUS),
+        unwrap(SheetsFormulaUIEnUS),
       ),
     },
   })
 
   univer.registerPlugin(UniverRenderEnginePlugin)
   univer.registerPlugin(UniverFormulaEnginePlugin)
-  univer.registerPlugin(UniverUIPlugin, { container })
+  // Pass the container as a string ID — UniverUIPlugin does getElementById internally
+  univer.registerPlugin(UniverUIPlugin, { container: containerId })
   univer.registerPlugin(UniverDocsPlugin)
   univer.registerPlugin(UniverDocsUIPlugin)
   univer.registerPlugin(UniverSheetsPlugin)

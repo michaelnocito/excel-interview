@@ -7,25 +7,28 @@ import { sendResults } from '../lib/email'
 import TaskPanel from '../components/TaskPanel'
 import './SessionScreen.css'
 
-function buildResultCode(track, taskSummaries, totalSecs) {
+const CONTAINER_ID = 'univer-container'
+
+function buildResultCode(trackId, taskSummaries, totalSecs) {
   const flags = taskSummaries.map((s, i) => {
     const pct = s ? s.score : 0
     return `T${i + 1}${pct >= 0.8 ? '✓' : pct >= 0.5 ? '~' : '✗'}`
   }).join('-')
-  return `${track.toUpperCase()}-${flags}-${totalSecs}s`
+  return `${trackId.toUpperCase()}-${flags}-${totalSecs}s`
 }
 
 export default function SessionScreen({ config, track, onComplete }) {
-  const containerRef = useRef(null)
-  const univerRef    = useRef(null)
-  const autosaveRef  = useRef(null)
+  const univerAPIRef  = useRef(null)
+  const univerInstRef = useRef(null) // Univer instance — needed for disposal
+  const autosaveRef   = useRef(null)
 
   const [taskIndex, setTaskIndex]       = useState(0)
   const [elapsedTotal, setElapsedTotal] = useState(0)
   const [taskResults, setTaskResults]   = useState({})
   const [taskTimes, setTaskTimes]       = useState({})
   const [taskStartSec, setTaskStartSec] = useState(0)
-  const [status, setStatus]            = useState('running') // running | grading | done
+  const [status, setStatus]             = useState('running') // running | grading | done
+  const [initError, setInitError]       = useState(null)
 
   // Session-wide elapsed timer
   useEffect(() => {
@@ -33,13 +36,20 @@ export default function SessionScreen({ config, track, onComplete }) {
     return () => clearInterval(t)
   }, [])
 
-  // Boot Univer once
+  // Boot Univer — runs after the container div is in the DOM
   useEffect(() => {
-    if (!containerRef.current || univerRef.current) return
-    const { univerAPI } = createUniverInstance(containerRef.current, track.workbookData)
-    univerRef.current = univerAPI
+    if (univerInstRef.current) return // already up (StrictMode guard)
 
-    // Autosave every 10 s
+    try {
+      const { univer, univerAPI } = createUniverInstance(CONTAINER_ID, track.workbookData)
+      univerInstRef.current = univer
+      univerAPIRef.current  = univerAPI
+    } catch (err) {
+      console.error('Univer init error:', err)
+      setInitError(String(err))
+      return
+    }
+
     autosaveRef.current = setInterval(() => {
       saveSession({
         config,
@@ -53,21 +63,23 @@ export default function SessionScreen({ config, track, onComplete }) {
 
     return () => {
       clearInterval(autosaveRef.current)
+      univerInstRef.current?.dispose?.()
+      univerInstRef.current = null
+      univerAPIRef.current  = null
     }
-  }, [])
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const finishTask = useCallback(async ({ timedOut }) => {
     if (status !== 'running') return
-    const taskId = track.tasks[taskIndex].id
-    const answerCells = track.answerKey[taskId] || []
-    const sheetName = track.tasks[taskIndex].targetSheet
+    const task        = track.tasks[taskIndex]
+    const answerCells = track.answerKey[task.id] || []
 
-    const cellResults = gradeTask(univerRef.current, sheetName, answerCells)
-    const summary = summarizeTask(cellResults)
-    const elapsed = elapsedTotal - taskStartSec
+    const cellResults = gradeTask(univerAPIRef.current, task.targetSheet, answerCells)
+    const summary     = summarizeTask(cellResults)
+    const elapsed     = elapsedTotal - taskStartSec
 
-    const newResults = { ...taskResults, [taskId]: { cellResults, summary, elapsed, timedOut } }
-    const newTimes   = { ...taskTimes, [taskId]: elapsed }
+    const newResults = { ...taskResults, [task.id]: { cellResults, summary, elapsed, timedOut } }
+    const newTimes   = { ...taskTimes,   [task.id]: elapsed }
     setTaskResults(newResults)
     setTaskTimes(newTimes)
 
@@ -76,7 +88,8 @@ export default function SessionScreen({ config, track, onComplete }) {
     if (!isLast) {
       setTaskIndex(i => i + 1)
       setTaskStartSec(elapsedTotal)
-      saveSession({ config, trackId: track.id, taskIndex: taskIndex + 1, taskResults: newResults, taskTimes: newTimes, elapsedTotal }).catch(() => {})
+      saveSession({ config, trackId: track.id, taskIndex: taskIndex + 1,
+                    taskResults: newResults, taskTimes: newTimes, elapsedTotal }).catch(() => {})
     } else {
       setStatus('grading')
       await completeSession(newResults, newTimes)
@@ -84,32 +97,29 @@ export default function SessionScreen({ config, track, onComplete }) {
   }, [status, taskIndex, taskResults, taskTimes, elapsedTotal, taskStartSec, track, config])
 
   async function completeSession(results, times) {
-    const summaries = track.tasks.map(t => results[t.id]?.summary || null)
+    const summaries  = track.tasks.map(t => results[t.id]?.summary || null)
     const resultCode = buildResultCode(track.id, summaries, elapsedTotal)
-
-    // Build narrative prompt for AI (or stub if no API key)
-    const narrative = await generateNarrative(track, results, config.candidateName)
+    const narrative  = await generateNarrative(track, results, config.candidateName)
 
     const payload = {
       version: 1,
-      candidateName: config.candidateName,
-      track: track.id,
-      trackLabel: track.label,
+      candidateName:      config.candidateName,
+      track:              track.id,
+      trackLabel:         track.label,
       resultCode,
       sessionDurationSecs: elapsedTotal,
       tasks: track.tasks.map(t => ({
-        id: t.id,
-        label: t.label,
+        id:          t.id,
+        label:       t.label,
         elapsedSecs: times[t.id],
-        summary: results[t.id]?.summary,
+        summary:     results[t.id]?.summary,
         cellResults: results[t.id]?.cellResults,
-        timedOut: results[t.id]?.timedOut,
+        timedOut:    results[t.id]?.timedOut,
       })),
       narrative,
       exportedAt: new Date().toISOString(),
     }
 
-    // Seal + download
     let sealed = null
     try {
       sealed = await sealPayload(payload)
@@ -118,16 +128,15 @@ export default function SessionScreen({ config, track, onComplete }) {
       console.error('Seal/download failed:', err)
     }
 
-    // Email
     try {
       await sendResults({
-        toEmail: config.toEmail,
-        ccEmails: config.ccEmails,
-        candidateName: config.candidateName,
-        track: `${track.label} (${track.id})`,
+        toEmail:        config.toEmail,
+        ccEmails:       config.ccEmails,
+        candidateName:  config.candidateName,
+        track:          `${track.label} (${track.id})`,
         resultCode,
         narrative,
-        sealedPayload: sealed || '(encryption failed)',
+        sealedPayload:  sealed || '(encryption failed)',
       })
     } catch (err) {
       console.error('Email send failed:', err)
@@ -138,20 +147,28 @@ export default function SessionScreen({ config, track, onComplete }) {
     onComplete({ resultCode, payload })
   }
 
+  // Completion screen triggers via App
   if (status === 'grading' || status === 'done') return null
 
-  const currentTask = track.tasks[taskIndex]
+  if (initError) {
+    return (
+      <div style={{ padding: '2rem', color: '#ef4444', fontFamily: 'monospace' }}>
+        <strong>Spreadsheet failed to load.</strong><br />{initError}
+      </div>
+    )
+  }
 
   return (
     <div className="session-screen">
       <TaskPanel
-        task={currentTask}
+        task={track.tasks[taskIndex]}
         taskIndex={taskIndex}
         totalTasks={track.tasks.length}
         elapsedTotal={elapsedTotal}
         onComplete={finishTask}
       />
-      <div className="univer-container" ref={containerRef} />
+      {/* id must match CONTAINER_ID — Univer mounts here by string ID */}
+      <div id={CONTAINER_ID} className="univer-container" />
     </div>
   )
 }
@@ -164,19 +181,8 @@ async function generateNarrative(track, results, candidateName) {
     const r = results[t.id]
     if (!r) return `${t.label}: not attempted`
     const s = r.summary
-    return `${t.label}: ${s.correct}/${s.total} correct, ${s.hardcoded} hardcoded, ${r.elapsed}s elapsed${r.timedOut ? ' (timed out)' : ''}`
+    return `${t.label}: ${s.correct}/${s.total} correct, ${s.hardcoded} hardcoded, ${r.elapsed}s${r.timedOut ? ' (timed out)' : ''}`
   }).join('\n')
-
-  const prompt = `You are a hiring manager reviewing an Excel skills assessment. Write a 2-paragraph narrative (under 150 words) summarizing this candidate's performance. Be specific, factual, and balanced. Do not include a score or overall hire/no-hire recommendation — Carl will make that judgment.
-
-Candidate: ${candidateName}
-Track: ${track.label}
-
-Results:
-${summaryText}
-
-Paragraph 1: Strengths observed.
-Paragraph 2: Areas of concern or growth.`
 
   try {
     const res = await fetch('https://api.anthropic.com/v1/messages', {
@@ -190,7 +196,9 @@ Paragraph 2: Areas of concern or growth.`
       body: JSON.stringify({
         model: 'claude-haiku-4-5-20251001',
         max_tokens: 300,
-        messages: [{ role: 'user', content: prompt }],
+        messages: [{ role: 'user', content:
+          `You are a hiring manager reviewing an Excel skills assessment. Write a 2-paragraph narrative (under 150 words). Be specific and balanced. No score or hire/no-hire recommendation.\n\nCandidate: ${candidateName}\nTrack: ${track.label}\n\nResults:\n${summaryText}\n\nParagraph 1: Strengths. Paragraph 2: Areas of concern.`
+        }],
       }),
     })
     const data = await res.json()
@@ -205,8 +213,8 @@ function buildFallbackNarrative(track, results, candidateName) {
     const r = results[t.id]
     if (!r) return `${t.label}: not completed.`
     const s = r.summary
-    const hardcodedNote = s.hardcoded > 0 ? ` (${s.hardcoded} cell(s) hardcoded instead of formula)` : ''
-    return `${t.label}: ${s.correct}/${s.total} cells correct${hardcodedNote}.`
+    const note = s.hardcoded > 0 ? ` (${s.hardcoded} hardcoded)` : ''
+    return `${t.label}: ${s.correct}/${s.total} correct${note}.`
   })
-  return `Assessment summary for ${candidateName} (${track.label} track):\n\n${lines.join(' ')}\n\n(AI narrative unavailable — API key not configured.)`
+  return `Assessment summary for ${candidateName} (${track.label}):\n\n${lines.join(' ')}\n\n(AI narrative unavailable — no API key.)`
 }
