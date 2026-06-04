@@ -1,0 +1,284 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Assessment Viewer</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0f1117; --surface: #1a1d27; --border: #2a2d3a;
+      --text: #e8eaf0; --muted: #8b91a7; --accent: #4f7fff;
+      --green: #22c55e; --yellow: #eab308; --red: #ef4444;
+      --font: 'Inter', 'Segoe UI', system-ui, sans-serif; --r: 8px;
+    }
+    html, body { min-height: 100%; background: var(--bg); color: var(--text); font-family: var(--font); }
+    body { padding: 2rem 1rem; }
+
+    .container { max-width: 820px; margin: 0 auto; }
+    h1 { font-size: 1.4rem; margin-bottom: 0.25rem; }
+    .subtitle { color: var(--muted); font-size: 0.875rem; margin-bottom: 2rem; }
+
+    /* Import area */
+    .import-area {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--r); padding: 1.5rem; margin-bottom: 1.5rem;
+    }
+    .import-area label { display: block; font-size: 0.85rem; color: var(--muted); margin-bottom: 0.5rem; }
+    .import-row { display: flex; gap: 0.5rem; }
+    textarea {
+      flex: 1; background: var(--bg); border: 1px solid var(--border);
+      border-radius: var(--r); padding: 0.6rem 0.8rem; color: var(--text);
+      font-family: monospace; font-size: 0.8rem; resize: vertical; min-height: 80px;
+    }
+    textarea:focus { outline: none; border-color: var(--accent); }
+    .or-divider { display: flex; align-items: center; gap: 0.5rem; margin: 0.75rem 0; color: var(--muted); font-size: 0.8rem; }
+    .or-divider::before, .or-divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+    input[type=file] { display: none; }
+    .file-btn {
+      display: inline-block; background: transparent; border: 1px solid var(--border);
+      color: var(--muted); border-radius: var(--r); padding: 0.5rem 1rem;
+      font-size: 0.875rem; cursor: pointer; font-family: var(--font);
+    }
+    .file-btn:hover { border-color: var(--muted); }
+    .decrypt-btn {
+      background: var(--accent); color: #fff; border: none;
+      border-radius: var(--r); padding: 0.65rem 1.4rem;
+      font-size: 0.95rem; cursor: pointer; font-family: var(--font); white-space: nowrap;
+    }
+    .decrypt-btn:hover { opacity: 0.9; }
+    .error-msg { color: var(--red); font-size: 0.875rem; margin-top: 0.75rem; }
+
+    /* Result card */
+    .result { display: none; }
+    .result.visible { display: block; }
+
+    .top-line {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--r); padding: 1.25rem 1.5rem; margin-bottom: 1rem;
+      display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 1rem;
+    }
+    .stat-label { font-size: 0.72rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.25rem; }
+    .stat-value { font-size: 1.1rem; }
+
+    .result-code-box {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--r); padding: 1rem 1.5rem; margin-bottom: 1rem;
+    }
+    .result-code-box .stat-value { font-family: monospace; font-size: 1rem; word-break: break-all; }
+
+    .narrative-box {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--r); padding: 1.25rem 1.5rem; margin-bottom: 1rem;
+    }
+    .narrative-box h2 { font-size: 0.85rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.75rem; }
+    .narrative-text { font-size: 0.95rem; line-height: 1.65; white-space: pre-wrap; }
+
+    /* Task breakdown */
+    .task-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--r); padding: 1.25rem 1.5rem; margin-bottom: 1rem;
+    }
+    .task-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
+    .task-title { font-size: 1rem; }
+    .task-meta { font-size: 0.8rem; color: var(--muted); }
+
+    .score-row { display: flex; gap: 1.5rem; margin-bottom: 1rem; flex-wrap: wrap; }
+    .score-chip {
+      display: inline-flex; align-items: center; gap: 0.35rem;
+      font-size: 0.82rem; padding: 0.25rem 0.65rem; border-radius: 999px;
+    }
+    .chip-green  { background: rgba(34,197,94,0.15);  color: var(--green); }
+    .chip-yellow { background: rgba(234,179,8,0.15);  color: var(--yellow); }
+    .chip-red    { background: rgba(239,68,68,0.15);  color: var(--red); }
+
+    table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+    th { text-align: left; color: var(--muted); font-weight: 500; padding: 0.35rem 0.5rem; border-bottom: 1px solid var(--border); }
+    td { padding: 0.35rem 0.5rem; border-bottom: 1px solid rgba(42,45,58,0.5); vertical-align: top; }
+    tr:last-child td { border-bottom: none; }
+    .cell-ref { font-family: monospace; color: var(--muted); }
+    .badge {
+      display: inline-block; font-size: 0.75rem; padding: 0.1rem 0.5rem;
+      border-radius: 999px; font-weight: 500;
+    }
+    .badge-correct   { background: rgba(34,197,94,0.15);  color: var(--green); }
+    .badge-hardcoded { background: rgba(234,179,8,0.15);  color: var(--yellow); }
+    .badge-incorrect { background: rgba(239,68,68,0.15);  color: var(--red); }
+    .formula-code { font-family: monospace; font-size: 0.78rem; color: var(--muted); word-break: break-all; }
+
+    details summary { cursor: pointer; color: var(--muted); font-size: 0.82rem; margin-top: 0.75rem; user-select: none; }
+    details[open] summary { margin-bottom: 0.5rem; }
+
+    @media (max-width: 600px) {
+      .top-line { grid-template-columns: 1fr 1fr; }
+      .import-row { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h1>Assessment Viewer</h1>
+  <p class="subtitle">Paste the sealed payload from the email, or upload the .enc file, then decrypt.</p>
+
+  <div class="import-area">
+    <label>Sealed payload (from email)</label>
+    <div class="import-row">
+      <textarea id="pasteArea" placeholder="Paste the sealed payload here…"></textarea>
+    </div>
+    <div class="or-divider">or</div>
+    <label class="file-btn" for="fileInput">Upload .enc file</label>
+    <input type="file" id="fileInput" accept=".enc" />
+    <div style="margin-top:1rem;text-align:right;">
+      <button class="decrypt-btn" onclick="decrypt()">Decrypt →</button>
+    </div>
+    <p class="error-msg" id="errorMsg" style="display:none"></p>
+  </div>
+
+  <div class="result" id="result"></div>
+</div>
+
+<script>
+  // ── Crypto (mirrors src/lib/encrypt.js) ────────────────────────────────────
+  const KEY_MATERIAL = 'excel-interview-v1-carl-2026'
+
+  async function deriveKey() {
+    const enc = new TextEncoder()
+    const raw = await crypto.subtle.importKey('raw', enc.encode(KEY_MATERIAL), 'PBKDF2', false, ['deriveKey'])
+    return crypto.subtle.deriveKey(
+      { name: 'PBKDF2', salt: enc.encode('meridian-salt'), iterations: 100000, hash: 'SHA-256' },
+      raw,
+      { name: 'AES-GCM', length: 256 },
+      false,
+      ['encrypt', 'decrypt']
+    )
+  }
+
+  async function unseal(sealed) {
+    const key = await deriveKey()
+    const combined = Uint8Array.from(atob(sealed.trim()), c => c.charCodeAt(0))
+    const iv = combined.slice(0, 12)
+    const ciphertext = combined.slice(12)
+    const plain = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, ciphertext)
+    return JSON.parse(new TextDecoder().decode(plain))
+  }
+
+  // ── File upload ─────────────────────────────────────────────────────────────
+  document.getElementById('fileInput').addEventListener('change', e => {
+    const file = e.target.files[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = ev => { document.getElementById('pasteArea').value = ev.target.result }
+    reader.readAsText(file)
+  })
+
+  // ── Decrypt + render ────────────────────────────────────────────────────────
+  async function decrypt() {
+    const err = document.getElementById('errorMsg')
+    err.style.display = 'none'
+    const sealed = document.getElementById('pasteArea').value.trim()
+    if (!sealed) { showError('Nothing to decrypt.'); return }
+    try {
+      const payload = await unseal(sealed)
+      render(payload)
+    } catch (e) {
+      showError('Decryption failed. Check that the payload is complete and untampered.')
+    }
+  }
+
+  function showError(msg) {
+    const err = document.getElementById('errorMsg')
+    err.textContent = msg
+    err.style.display = 'block'
+  }
+
+  function fmtSecs(s) {
+    if (!s && s !== 0) return '—'
+    const m = Math.floor(s / 60), sec = s % 60
+    return `${m}m ${sec}s`
+  }
+
+  function statusBadge(status) {
+    const map = { correct: ['badge-correct','✓ Correct'], hardcoded: ['badge-hardcoded','⚠ Hardcoded'], incorrect: ['badge-incorrect','✗ Incorrect'] }
+    const [cls, label] = map[status] || ['','—']
+    return `<span class="badge ${cls}">${label}</span>`
+  }
+
+  function render(p) {
+    const totalCells = p.tasks.reduce((acc, t) => acc + (t.summary?.total || 0), 0)
+    const correctCells = p.tasks.reduce((acc, t) => acc + (t.summary?.correct || 0), 0)
+    const hardcodedCells = p.tasks.reduce((acc, t) => acc + (t.summary?.hardcoded || 0), 0)
+    const formulaRate = totalCells > 0
+      ? Math.round(((correctCells + hardcodedCells) > 0 ? (correctCells / (correctCells + hardcodedCells)) : 1) * 100)
+      : 0
+
+    let html = `
+      <div class="top-line">
+        <div><div class="stat-label">Candidate</div><div class="stat-value">${esc(p.candidateName)}</div></div>
+        <div><div class="stat-label">Track</div><div class="stat-value">${esc(p.trackLabel || p.track)}</div></div>
+        <div><div class="stat-label">Score</div><div class="stat-value">${correctCells}/${totalCells} cells</div></div>
+        <div><div class="stat-label">Session time</div><div class="stat-value">${fmtSecs(p.sessionDurationSecs)}</div></div>
+      </div>
+
+      <div class="result-code-box">
+        <div class="stat-label">Session reference code</div>
+        <div class="stat-value">${esc(p.resultCode)}</div>
+      </div>
+
+      <div class="narrative-box">
+        <h2>AI Summary</h2>
+        <div class="narrative-text">${esc(p.narrative || '(No narrative available)')}</div>
+      </div>
+    `
+
+    for (const task of p.tasks) {
+      const s = task.summary || {}
+      const elapsed = fmtSecs(task.elapsedSecs)
+      const timedOut = task.timedOut ? ' — timed out' : ''
+
+      html += `<div class="task-card">
+        <div class="task-header">
+          <span class="task-title">${esc(task.label)}</span>
+          <span class="task-meta">${elapsed}${timedOut}</span>
+        </div>
+        <div class="score-row">
+          <span class="score-chip chip-green">✓ ${s.correct ?? 0} correct</span>
+          <span class="score-chip chip-yellow">⚠ ${s.hardcoded ?? 0} hardcoded</span>
+          <span class="score-chip chip-red">✗ ${s.incorrect ?? 0} incorrect</span>
+        </div>`
+
+      if (task.cellResults?.length) {
+        html += `<details><summary>Cell-by-cell detail (${task.cellResults.length} cells)</summary>
+          <table>
+            <thead><tr><th>Cell</th><th>Expected</th><th>Actual</th><th>Status</th><th>Formula</th></tr></thead>
+            <tbody>`
+        for (const c of task.cellResults) {
+          const ref = `R${c.row}C${c.col}`
+          const formula = c.formula && c.formula.startsWith('=')
+            ? `<div class="formula-code">${esc(c.formula)}</div>` : '<span style="color:var(--muted)">—</span>'
+          html += `<tr>
+            <td class="cell-ref">${ref}</td>
+            <td>${esc(String(c.expected ?? ''))}</td>
+            <td>${esc(String(c.actual ?? ''))}</td>
+            <td>${statusBadge(c.status)}</td>
+            <td>${formula}</td>
+          </tr>`
+        }
+        html += `</tbody></table></details>`
+      }
+
+      html += `</div>`
+    }
+
+    const el = document.getElementById('result')
+    el.innerHTML = html
+    el.className = 'result visible'
+  }
+
+  function esc(str) {
+    return String(str)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+      .replace(/"/g,'&quot;').replace(/'/g,'&#39;')
+  }
+</script>
+</body>
+</html>
