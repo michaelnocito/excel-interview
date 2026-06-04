@@ -5,7 +5,7 @@ const SERVICE_ID  = import.meta.env.VITE_EMAILJS_SERVICE_ID  || ''
 const TEMPLATE_ID = import.meta.env.VITE_EMAILJS_TEMPLATE_ID || ''
 const PUBLIC_KEY  = import.meta.env.VITE_EMAILJS_PUBLIC_KEY  || ''
 
-export async function sendResults({ toEmail, ccEmails, candidateName, track, resultCode, narrative, sealedPayload }) {
+export async function sendResults({ toEmail, ccEmails, candidateName, track, resultCode, summary, sealedPayload }) {
   if (!SERVICE_ID || !TEMPLATE_ID || !PUBLIC_KEY) {
     console.warn('EmailJS not configured — skipping email send')
     return { ok: false, reason: 'not-configured' }
@@ -23,7 +23,7 @@ export async function sendResults({ toEmail, ccEmails, candidateName, track, res
         candidate_name:  candidateName,
         track:           track,
         result_code:     resultCode,
-        narrative:       narrative,
+        summary:         summary,
         sealed_payload:  sealedPayload,
         sent_at:         new Date().toLocaleString(),
       },

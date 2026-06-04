@@ -118,7 +118,7 @@ export default function SessionScreen({ config, track, onComplete, resume }) {
   async function completeSession(results, times) {
     const summaries  = track.tasks.map(t => results[t.id]?.summary || null)
     const resultCode = buildResultCode(track.id, summaries, elapsedTotal)
-    const narrative  = await generateNarrative(track, results, config.candidateName)
+    const summary    = buildSummary(track, results, config.candidateName)
 
     const payload = {
       version: 1,
@@ -135,7 +135,7 @@ export default function SessionScreen({ config, track, onComplete, resume }) {
         cellResults: results[t.id]?.cellResults,
         timedOut:    results[t.id]?.timedOut,
       })),
-      narrative,
+      summary,
       exportedAt: new Date().toISOString(),
     }
 
@@ -156,7 +156,7 @@ export default function SessionScreen({ config, track, onComplete, resume }) {
         candidateName:  config.candidateName,
         track:          `${track.label} (${track.id})`,
         resultCode,
-        narrative,
+        summary,
         sealedPayload:  sealed || '(encryption failed)',
       })
     } catch (err) {
@@ -194,48 +194,15 @@ export default function SessionScreen({ config, track, onComplete, resume }) {
   )
 }
 
-async function generateNarrative(track, results, candidateName) {
-  const apiKey = import.meta.env.VITE_ANTHROPIC_API_KEY
-  if (!apiKey) return buildFallbackNarrative(track, results, candidateName)
-
-  const summaryText = track.tasks.map(t => {
-    const r = results[t.id]
-    if (!r) return `${t.label}: not attempted`
-    const s = r.summary
-    return `${t.label}: ${s.correct}/${s.total} correct, ${s.hardcoded} hardcoded, ${r.elapsed}s${r.timedOut ? ' (timed out)' : ''}`
-  }).join('\n')
-
-  try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-request-forwarding': 'true',
-      },
-      body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: 300,
-        messages: [{ role: 'user', content:
-          `You are a hiring manager reviewing an Excel skills assessment. Write a 2-paragraph narrative (under 150 words). Be specific and balanced. No score or hire/no-hire recommendation.\n\nCandidate: ${candidateName}\nTrack: ${track.label}\n\nResults:\n${summaryText}\n\nParagraph 1: Strengths. Paragraph 2: Areas of concern.`
-        }],
-      }),
-    })
-    const data = await res.json()
-    return data.content?.[0]?.text || buildFallbackNarrative(track, results, candidateName)
-  } catch {
-    return buildFallbackNarrative(track, results, candidateName)
-  }
-}
-
-function buildFallbackNarrative(track, results, candidateName) {
+// Plain rule-based summary — just the facts (no AI, no network call).
+function buildSummary(track, results, candidateName) {
   const lines = track.tasks.map(t => {
     const r = results[t.id]
     if (!r) return `${t.label}: not completed.`
     const s = r.summary
-    const note = s.hardcoded > 0 ? ` (${s.hardcoded} hardcoded)` : ''
-    return `${t.label}: ${s.correct}/${s.total} correct${note}.`
+    const note = s.hardcoded > 0 ? ` — ${s.hardcoded} hardcoded (correct value, no formula)` : ''
+    const to = r.timedOut ? ', timed out' : ''
+    return `${t.label}: ${s.correct}/${s.total} cells correct${note} (${r.elapsed}s${to}).`
   })
-  return `Assessment summary for ${candidateName} (${track.label}):\n\n${lines.join(' ')}\n\n(AI narrative unavailable — no API key.)`
+  return `Results for ${candidateName} — ${track.label}:\n\n${lines.join('\n')}`
 }
