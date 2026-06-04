@@ -1,0 +1,31 @@
+.task-panel {
+  width: 280px; flex-shrink: 0; height: 100%;
+  background: var(--c-surface); border-right: 1px solid var(--c-border);
+  display: flex; flex-direction: column; padding: 1.25rem;
+  overflow-y: auto;
+}
+
+.panel-header { margin-bottom: 1.25rem; }
+.task-counter { font-size: 0.75rem; color: var(--c-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+.task-label   { font-size: 1.05rem; margin-top: 0.25rem; }
+
+.timer-block { margin-bottom: 1.5rem; }
+.timer-value { font-size: 2rem; font-variant-numeric: tabular-nums; margin-bottom: 0.4rem; }
+.timer-block.urgent .timer-value { color: var(--c-red); }
+
+.timer-bar { height: 4px; background: var(--c-border); border-radius: 2px; overflow: hidden; }
+.timer-fill { height: 100%; background: var(--c-accent); transition: width 1s linear; border-radius: 2px; }
+.timer-block.urgent .timer-fill { background: var(--c-red); }
+
+.session-elapsed { font-size: 0.75rem; color: var(--c-muted); margin-top: 0.4rem; }
+
+.instructions h3 { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--c-muted); margin-bottom: 0.6rem; }
+.instructions p  { font-size: 0.9rem; line-height: 1.55; margin-bottom: 0.5rem; color: var(--c-text); }
+
+.complete-btn {
+  margin-top: auto; padding-top: 1.5rem; background: var(--c-accent);
+  color: #fff; border: none; border-radius: var(--radius);
+  padding: 0.7rem; font-size: 0.95rem; cursor: pointer; font-family: var(--font);
+  width: 100%;
+}
+.complete-btn:hover { opacity: 0.9; }

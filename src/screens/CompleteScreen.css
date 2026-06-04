@@ -1,0 +1,22 @@
+.complete-screen {
+  display: flex; align-items: center; justify-content: center;
+  height: 100%; background: var(--c-bg);
+}
+.complete-card {
+  text-align: center; padding: 3rem 2rem; max-width: 400px;
+}
+.complete-check {
+  width: 64px; height: 64px; background: var(--c-green);
+  border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  font-size: 2rem; color: #fff; margin: 0 auto 1.5rem;
+}
+.complete-card h1 { font-size: 1.75rem; margin-bottom: 0.75rem; }
+.complete-card p  { color: var(--c-muted); margin-bottom: 2rem; }
+
+.result-code {
+  display: inline-flex; flex-direction: column; align-items: center;
+  background: var(--c-surface); border: 1px solid var(--c-border);
+  border-radius: var(--radius); padding: 1rem 2rem; gap: 0.25rem;
+}
+.result-code-label { font-size: 0.75rem; color: var(--c-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+.result-code-value { font-size: 1.1rem; font-family: monospace; color: var(--c-text); letter-spacing: 0.05em; }

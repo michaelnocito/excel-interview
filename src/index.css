@@ -1,0 +1,51 @@
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --c-bg:      #0f1117;
+  --c-surface: #1a1d27;
+  --c-border:  #2a2d3a;
+  --c-text:    #e8eaf0;
+  --c-muted:   #8b91a7;
+  --c-accent:  #4f7fff;
+  --c-green:   #22c55e;
+  --c-yellow:  #eab308;
+  --c-red:     #ef4444;
+  --font:      'Inter', 'Segoe UI', system-ui, sans-serif;
+  --radius:    8px;
+}
+
+html, body, #root { width: 100%; height: 100%; overflow: hidden; }
+body { font-family: var(--font); background: var(--c-bg); color: var(--c-text); }
+
+.loading {
+  display: flex; align-items: center; justify-content: center;
+  height: 100%; color: var(--c-muted);
+}
+
+.recovery-screen {
+  display: flex; align-items: center; justify-content: center;
+  height: 100%; background: var(--c-bg);
+}
+.recovery-card {
+  background: var(--c-surface); border: 1px solid var(--c-border);
+  border-radius: var(--radius); padding: 2rem; max-width: 420px; width: 90%;
+  text-align: center;
+}
+.recovery-card h2 { margin-bottom: 0.75rem; font-size: 1.25rem; }
+.recovery-card p  { color: var(--c-muted); margin-bottom: 1.5rem; line-height: 1.5; }
+.recovery-actions { display: flex; gap: 0.75rem; justify-content: center; flex-wrap: wrap; }
+
+.btn-primary {
+  background: var(--c-accent); color: #fff; border: none;
+  padding: 0.6rem 1.4rem; border-radius: var(--radius);
+  font-size: 0.95rem; cursor: pointer; font-family: var(--font);
+}
+.btn-primary:hover { opacity: 0.9; }
+
+.btn-ghost {
+  background: transparent; color: var(--c-muted);
+  border: 1px solid var(--c-border);
+  padding: 0.6rem 1.4rem; border-radius: var(--radius);
+  font-size: 0.95rem; cursor: pointer; font-family: var(--font);
+}
+.btn-ghost:hover { border-color: var(--c-muted); }
