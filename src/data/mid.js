@@ -13,7 +13,7 @@ const employeeRows = {
   1:  row(2001,'  michael o\'brien  ','hr',43466,62000,0.81,'','','','mobrien@meridian.com','','New York, NY','','','',''),
   2:  row(2002,'PATRICIA CHEN-DAVIS','fin',44593,88000,0.94,'','','','','','los angeles,CA','','','',''),
   3:  row(2003,'  robert  lee','mkt',43831,57000,0.72,'','','','rlee@meridian.com','','Chicago , IL','','','',''),
-  4:  row(2004,'mary-jane SMITH  ','it',45197,91000,0.88,'','','','mjsmith@meridian.com','','  Houston, TX','','','',''),
+  4:  row(2004,'anne-marie SMITH  ','it',45197,91000,0.88,'','','','amsmith@meridian.com','','  Houston, TX','','','',''),
   5:  row(2005,'DAVID GARCIA','ops',44197,69000,0.77,'','','','','','San Diego, CA','','','',''),
   6:  row(2006,'  jennifer WU','hr',44927,71000,0.85,'','','','jwu@meridian.com','','Dallas,TX','','','',''),
   7:  row(2007,'THOMAS   BROWN','fin',43196,95000,0.91,'','','','','','San Jose , CA','','','',''),
@@ -35,7 +35,7 @@ const deptRefRows = {
 
 export const MID_TRACK = {
   id: 'mid',
-  label: 'Mid Level',
+  label: 'Data Migration Analyst – Mid/Senior',
 
   workbookData: {
     id: 'wb-mid',
@@ -172,7 +172,7 @@ export const MID_TRACK = {
       { row: 1,  col: 7, expected: "Michael O'Brien",    requireFormula: ['TRIM','PROPER'] },
       { row: 2,  col: 7, expected: 'Patricia Chen-Davis', requireFormula: ['TRIM','PROPER'] },
       { row: 3,  col: 7, expected: 'Robert Lee',          requireFormula: ['TRIM','PROPER'] },
-      { row: 4,  col: 7, expected: 'Mary-Jane Smith',     requireFormula: ['TRIM','PROPER'] },
+      { row: 4,  col: 7, expected: 'Anne-Marie Smith',    requireFormula: ['TRIM','PROPER'] },
       { row: 5,  col: 7, expected: 'David Garcia',        requireFormula: ['TRIM','PROPER'] },
       { row: 6,  col: 7, expected: 'Jennifer Wu',         requireFormula: ['TRIM','PROPER'] },
       { row: 7,  col: 7, expected: 'Thomas Brown',        requireFormula: ['TRIM','PROPER'] },
@@ -184,7 +184,7 @@ export const MID_TRACK = {
       { row: 1,  col: 8, expected: 'mobrien@meridian.com',   requireFormula: ['IF'] },
       { row: 2,  col: 8, expected: 'N/A',                    requireFormula: ['IF'] },
       { row: 3,  col: 8, expected: 'rlee@meridian.com',      requireFormula: ['IF'] },
-      { row: 4,  col: 8, expected: 'mjsmith@meridian.com',   requireFormula: ['IF'] },
+      { row: 4,  col: 8, expected: 'amsmith@meridian.com',   requireFormula: ['IF'] },
       { row: 5,  col: 8, expected: 'N/A',                    requireFormula: ['IF'] },
       { row: 10, col: 8, expected: 'N/A',                    requireFormula: ['IF'] },
       { row: 1,  col: 10, expected: 'HR',  requireFormula: ['UPPER'] },

@@ -1,14 +1,16 @@
 import { useState } from 'react'
+import { TEMPLATES, TEMPLATE_MAP } from '../data/templates'
 import './ConfigScreen.css'
 
 export default function ConfigScreen({ onStart }) {
   const [form, setForm] = useState({
     candidateName: '',
-    track: 'entry',
+    track: TEMPLATES[0].id,
     toEmail: '',
     ccEmails: '',
   })
   const [error, setError] = useState('')
+  const selected = TEMPLATE_MAP[form.track]
 
   function set(field) {
     return e => setForm(f => ({ ...f, [field]: e.target.value }))
@@ -46,23 +48,17 @@ export default function ConfigScreen({ onStart }) {
           </div>
 
           <div className="field">
-            <label>Difficulty track</label>
-            <div className="track-toggle">
-              <button
-                type="button"
-                className={form.track === 'entry' ? 'active' : ''}
-                onClick={() => setForm(f => ({ ...f, track: 'entry' }))}
-              >
-                Entry Level
-              </button>
-              <button
-                type="button"
-                className={form.track === 'mid' ? 'active' : ''}
-                onClick={() => setForm(f => ({ ...f, track: 'mid' }))}
-              >
-                Mid Level
-              </button>
-            </div>
+            <label>Assessment template</label>
+            <select className="template-select" value={form.track} onChange={set('track')}>
+              {TEMPLATES.map(t => (
+                <option key={t.id} value={t.id}>{t.label}</option>
+              ))}
+            </select>
+            {selected && (
+              <p className="template-meta">
+                {selected.tasks.length} tasks · {selected.workbookData.name}
+              </p>
+            )}
           </div>
 
           <div className="field">

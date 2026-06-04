@@ -33,6 +33,7 @@ body { font-family: var(--font); background: var(--c-bg); color: var(--c-text); 
 }
 .recovery-card h2 { margin-bottom: 0.75rem; font-size: 1.25rem; }
 .recovery-card p  { color: var(--c-muted); margin-bottom: 1.5rem; line-height: 1.5; }
+.recovery-card .recovery-sub { font-size: 0.82rem; margin-top: -0.75rem; }
 .recovery-actions { display: flex; gap: 0.75rem; justify-content: center; flex-wrap: wrap; }
 
 .btn-primary {

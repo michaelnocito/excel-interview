@@ -17,18 +17,30 @@ function buildResultCode(trackId, taskSummaries, totalSecs) {
   return `${trackId.toUpperCase()}-${flags}-${totalSecs}s`
 }
 
-export default function SessionScreen({ config, track, onComplete }) {
+export default function SessionScreen({ config, track, onComplete, resume }) {
   const univerAPIRef  = useRef(null)
   const univerInstRef = useRef(null) // Univer instance — needed for disposal
   const autosaveRef   = useRef(null)
 
-  const [taskIndex, setTaskIndex]       = useState(0)
-  const [elapsedTotal, setElapsedTotal] = useState(0)
-  const [taskResults, setTaskResults]   = useState({})
-  const [taskTimes, setTaskTimes]       = useState({})
-  const [taskStartSec, setTaskStartSec] = useState(0)
+  const [taskIndex, setTaskIndex]       = useState(resume?.taskIndex ?? 0)
+  const [elapsedTotal, setElapsedTotal] = useState(resume?.elapsedTotal ?? 0)
+  const [taskResults, setTaskResults]   = useState(resume?.taskResults ?? {})
+  const [taskTimes, setTaskTimes]       = useState(resume?.taskTimes ?? {})
+  const [taskStartSec, setTaskStartSec] = useState(resume?.elapsedTotal ?? 0)
   const [status, setStatus]             = useState('running') // running | grading | done
   const [initError, setInitError]       = useState(null)
+
+  // Mirror latest session state into a ref so the autosave interval (created
+  // once) never reads a stale closure of taskIndex/results/etc.
+  const stateRef = useRef({})
+  stateRef.current = { taskIndex, taskResults, taskTimes, elapsedTotal }
+
+  const snapshotSession = () => ({
+    config,
+    trackId: track.id,
+    ...stateRef.current,
+    workbookSnapshot: univerAPIRef.current?.getActiveWorkbook()?.save?.() ?? null,
+  })
 
   // Session-wide elapsed timer
   useEffect(() => {
@@ -41,10 +53,16 @@ export default function SessionScreen({ config, track, onComplete }) {
     if (univerInstRef.current) return // already up (StrictMode guard)
 
     try {
-      const { univer, univerAPI } = createUniverInstance(CONTAINER_ID, track.workbookData)
+      // On recovery, rebuild from the saved grid snapshot instead of the pristine dataset
+      const workbookData = resume?.workbookSnapshot || track.workbookData
+      const { univer, univerAPI } = createUniverInstance(CONTAINER_ID, workbookData)
       univerInstRef.current = univer
       univerAPIRef.current  = univerAPI
-      if (import.meta.env.DEV) window.__univerAPI = univerAPI // dev-only debug handle
+      if (import.meta.env.DEV) {                              // dev-only validation handles
+        window.__univerAPI = univerAPI
+        window.__track = track
+        window.__checker = { gradeTask, summarizeTask }
+      }
     } catch (err) {
       console.error('Univer init error:', err)
       setInitError(String(err))
@@ -52,14 +70,7 @@ export default function SessionScreen({ config, track, onComplete }) {
     }
 
     autosaveRef.current = setInterval(() => {
-      saveSession({
-        config,
-        trackId: track.id,
-        taskIndex,
-        taskResults,
-        taskTimes,
-        elapsedTotal,
-      }).catch(() => {})
+      saveSession(snapshotSession()).catch(() => {})
     }, 10000)
 
     return () => {
@@ -93,8 +104,11 @@ export default function SessionScreen({ config, track, onComplete }) {
     if (!isLast) {
       setTaskIndex(i => i + 1)
       setTaskStartSec(elapsedTotal)
-      saveSession({ config, trackId: track.id, taskIndex: taskIndex + 1,
-                    taskResults: newResults, taskTimes: newTimes, elapsedTotal }).catch(() => {})
+      saveSession({
+        config, trackId: track.id, taskIndex: taskIndex + 1,
+        taskResults: newResults, taskTimes: newTimes, elapsedTotal,
+        workbookSnapshot: univerAPIRef.current?.getActiveWorkbook()?.save?.() ?? null,
+      }).catch(() => {})
     } else {
       setStatus('grading')
       await completeSession(newResults, newTimes)

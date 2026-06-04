@@ -31,7 +31,7 @@ const deptRefRows = {
 
 export const ENTRY_TRACK = {
   id: 'entry',
-  label: 'Entry Level',
+  label: 'Data Migration Analyst – Entry',
 
   workbookData: {
     id: 'wb-entry',

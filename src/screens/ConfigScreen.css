@@ -19,17 +19,14 @@
 }
 .field input:focus { outline: none; border-color: var(--c-accent); }
 
-.track-toggle { display: flex; gap: 0.5rem; }
-.track-toggle button {
-  flex: 1; background: var(--c-bg); border: 1px solid var(--c-border);
-  border-radius: var(--radius); padding: 0.55rem; color: var(--c-muted);
-  font-size: 0.9rem; cursor: pointer; font-family: var(--font);
-  transition: all 0.15s;
+.template-select {
+  width: 100%; background: var(--c-bg); border: 1px solid var(--c-border);
+  border-radius: var(--radius); padding: 0.55rem 0.8rem;
+  color: var(--c-text); font-size: 0.95rem; font-family: var(--font);
+  cursor: pointer;
 }
-.track-toggle button.active {
-  background: var(--c-accent); border-color: var(--c-accent);
-  color: #fff;
-}
+.template-select:focus { outline: none; border-color: var(--c-accent); }
+.template-meta { font-size: 0.78rem; color: var(--c-muted); margin-top: 0.4rem; }
 
 .config-error { color: var(--c-red); font-size: 0.875rem; margin-bottom: 1rem; }
 
