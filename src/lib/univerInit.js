@@ -9,7 +9,15 @@ import { UniverSheetsPlugin } from '@univerjs/sheets'
 import { UniverSheetsUIPlugin } from '@univerjs/sheets-ui'
 import { UniverSheetsFormulaPlugin } from '@univerjs/sheets-formula'
 import { UniverSheetsFormulaUIPlugin } from '@univerjs/sheets-formula-ui'
-import { FUniver } from '@univerjs/facade'
+
+// Facade API: base FUniver from core, augmented by per-package side-effect imports
+import { FUniver } from '@univerjs/core/facade'
+import '@univerjs/engine-formula/facade'
+import '@univerjs/ui/facade'
+import '@univerjs/docs-ui/facade'
+import '@univerjs/sheets/facade'
+import '@univerjs/sheets-ui/facade'
+import '@univerjs/sheets-formula/facade'
 
 import '@univerjs/design/lib/index.css'
 import '@univerjs/ui/lib/index.css'

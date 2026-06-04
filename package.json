@@ -17,7 +17,6 @@
     "@univerjs/docs-ui": "^0.25.0",
     "@univerjs/engine-formula": "^0.25.0",
     "@univerjs/engine-render": "^0.25.0",
-    "@univerjs/facade": "^0.5.5",
     "@univerjs/sheets": "^0.25.0",
     "@univerjs/sheets-formula": "^0.25.0",
     "@univerjs/sheets-formula-ui": "^0.25.0",

@@ -44,6 +44,7 @@ export default function SessionScreen({ config, track, onComplete }) {
       const { univer, univerAPI } = createUniverInstance(CONTAINER_ID, track.workbookData)
       univerInstRef.current = univer
       univerAPIRef.current  = univerAPI
+      if (import.meta.env.DEV) window.__univerAPI = univerAPI // dev-only debug handle
     } catch (err) {
       console.error('Univer init error:', err)
       setInitError(String(err))
@@ -63,9 +64,13 @@ export default function SessionScreen({ config, track, onComplete }) {
 
     return () => {
       clearInterval(autosaveRef.current)
-      univerInstRef.current?.dispose?.()
+      const inst = univerInstRef.current
       univerInstRef.current = null
       univerAPIRef.current  = null
+      // Defer Univer disposal past React's current render/commit — disposing
+      // synchronously here unmounts Univer's internal React root mid-render,
+      // which floods the console with race-condition warnings.
+      if (inst) setTimeout(() => { try { inst.dispose?.() } catch { /* already gone */ } }, 0)
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 

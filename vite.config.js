@@ -20,7 +20,6 @@ export default defineConfig({
       '@univerjs/design',
       '@univerjs/engine-render',
       '@univerjs/engine-formula',
-      '@univerjs/facade',
     ],
   },
 })
